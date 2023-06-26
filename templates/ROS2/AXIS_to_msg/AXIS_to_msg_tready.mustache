@@ -1,0 +1,12 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#axis}}
+{{name}}_tready_in when s_counter{{#currentMessage}}_{{currentMessage}}{{/currentMessage}}={{index_tdata}} else
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{>AXIS_to_msg_tready}}
+{{/multi}}
+{{/fields}}
+{{/message}}

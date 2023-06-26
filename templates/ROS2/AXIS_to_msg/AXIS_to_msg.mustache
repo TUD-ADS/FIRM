@@ -1,0 +1,77 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use ieee.std_logic_unsigned.all;
+USE ieee.numeric_std.ALL;
+use work.functions.all;
+
+entity {{#IP}}{{name}}{{/IP}} is
+    generic (
+        BITS    : integer := {{#msg}}{{BITS}}{{/msg}};
+        IPID    : natural := {{#IP}}{{ID}}{{/IP}}
+    );
+    Port (
+        clk                         : in std_logic;
+        rst                         : in std_logic;
+        -- AXIS Slave
+        s_axis_tvalid               : in std_logic;
+        s_axis_tdata                : in std_logic_vector (7 downto 0);
+        s_axis_tlast                : in std_logic;
+        s_axis_tready               : out std_logic;
+
+        -- ROS message definition
+        {{>AXIS_to_msg_Entity}}
+
+        fpgaros_valid_out                       : out std_logic
+        );
+end {{#IP}}{{name}}{{/IP}};
+
+architecture Behavioral of {{#IP}}{{name}}{{/IP}} is
+
+    {{#types}}
+    type {{name}} is array (0 to {{bytes}}) of std_logic_vector(7 downto 0);
+    {{/types}}
+
+    {{>AXIS_to_msg_SignalsFields}}
+
+    signal s_inputs, s_counter : std_logic_vector(31 downto 0) := (others=>'0');
+    signal s_tready : std_logic := '0';
+    {{>SignalCounters}}
+    {{>AXIS_to_msg_Padding}}
+
+    begin
+
+    process(clk)
+    begin
+        if(rising_edge(clk)) then
+            if(s_axis_tvalid='1' and s_tready='1') then
+                s_inputs <= s_inputs + '1';
+                if(s_axis_tlast='1') then
+                    s_inputs <= (others=>'0');
+                end if;
+                if(s_inputs<{{#msg}}{{#header}}{{start}} or s_inputs>{{end}}{{/header}}{{/msg}}) then
+                    {{>AXIS_to_msg_Process}}
+                end if;
+            end if;
+        end if;
+    end process;
+
+    {{>AXIS_to_msg_output_ports}}
+
+    s_axis_tready <= s_tready;
+    s_tready <=
+                    {{>AXIS_to_msg_tready}}
+                    '1';
+
+    fpgaros_valid_out <= '1' when s_counter>0 and s_axis_tvalid='1' else '0';
+
+end Behavioral;

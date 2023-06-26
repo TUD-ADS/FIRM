@@ -1,0 +1,20 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#datatype}}
+{{name}}_in : in std_logic_vector({{bits}} downto 0);
+{{/datatype}}
+{{#axis}}
+{{name}}_length_in : in std_logic_vector(31 downto 0);
+{{name}}_tdata_in : in std_logic_vector(7 downto 0);
+{{name}}_tvalid_in : in std_logic;
+{{name}}_tlast_in : in std_logic;
+{{name}}_tready_out : out std_logic;
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{currentMessage}}_valid_out : out std_logic;
+{{>msg_to_AXIS_Entity}}
+{{/multi}}
+{{/fields}}
+{{/message}}

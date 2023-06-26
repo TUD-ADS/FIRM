@@ -1,0 +1,141 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+#include "ros/ros.h"
+{{#messages}}
+#include "{{package}}/{{name}}.h"
+{{/messages}}
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <boost/format.hpp>
+
+namespace ser = ros::serialization;
+using namespace std;
+
+#define MIN_v_arr 2
+#define MAX_v_arr 5
+
+// ROS Built-in types (http://wiki.ros.org/msg):
+uint8_t create_bool(){return (rand()%(0xFF));}
+uint8_t create_uint8(){return (rand()%(0xFF));}
+uint8_t create_int8(){return (rand()%(0xFF));}
+uint16_t create_uint16(){return (rand()%(0xFFFF));}
+uint16_t create_int16(){return (rand()%(0xFFFF));}
+uint32_t create_uint32(){return (rand()%(0xFFFFFFFF));}
+uint32_t create_int32(){return (rand()%(0xFFFFFFFF));}
+uint64_t create_uint64(){return (rand()%(0xFFFFFFFFFFFFFFFF));}
+uint64_t create_int64(){return (rand()%(0xFFFFFFFFFFFFFFFF));}
+float create_float32(){return (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));}
+double create_float64(){return (static_cast <double> (rand()) / static_cast <double> (RAND_MAX));}
+// Random number between X and Y
+uint32_t field_range(){
+    uint32_t rand_min=MIN_v_arr;
+    uint32_t rand_max=MAX_v_arr;
+    return(rand()%(rand_max - rand_min + 1) + rand_min);
+}
+string create_string() {
+    uint32_t len = field_range();
+    string tmp_s;
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    srand( (unsigned) time(NULL) * getpid());
+    tmp_s.reserve(len);
+    for (int i = 0; i < len; ++i)
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    return tmp_s;
+}
+ros::Time create_time(){ros::Time time;time.sec = create_uint32();time.nsec = create_uint32();return time;}
+ros::Duration create_duration(){ros::Duration duration;duration.sec = create_uint32();duration.nsec = create_uint32();return duration;}
+
+// Deprecated
+#define create_byte() create_int8()
+#define create_char() create_uint8()
+
+{{#messages}}
+{{package}}::{{name}} create_{{package}}_{{name}}();
+{{/messages}}
+
+{{#messages}}
+{{package}}::{{name}} create_{{package}}_{{name}}() {
+    {{package}}::{{name}} result;
+
+    {{#structure}}
+    {{^v_arr}}
+    {{^c_arr}}
+    result.{{name}} = create_{{type}}();
+    {{/c_arr}}
+    {{/v_arr}}
+    {{#v_arr}}
+    for(int i=0; i<field_range(); i++){
+        result.{{name}}.push_back(create_{{type}}());
+    }
+    {{/v_arr}}
+    {{#c_arr}}
+    {{^msg}}
+    for(int i=0; i<result.{{name}}.size(); i++){
+        result.{{name}}.at(i) = create_{{type}}();
+    }
+    {{/msg}}
+    {{#msg}}
+    for(int i=0; i<{{c_arr_size}}; i++){
+        result.{{name}}[i] = create_{{type}}();
+    }
+    {{/msg}}
+    {{/c_arr}}
+    {{/structure}}
+    return result;
+}
+
+{{/messages}}
+
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "node_publisher");
+    ros::NodeHandle n;
+
+    FILE *fp;
+    ofstream file_stimulus_input, file_test_input;
+    file_stimulus_input.open("stimulus_input.txt");
+    file_test_input.open("test_input.txt");
+
+    srand(time(NULL));
+
+    {{#messages}}
+    {{#first}}
+    {{package}}::{{name}} {{name}};
+    {{name}}=create_{{package}}_{{name}}();
+    file_test_input << {{name}};
+    file_test_input.close();
+
+    uint32_t serial_size = ros::serialization::serializationLength({{name}});
+    boost::shared_array<uint8_t> buffer(new uint8_t[serial_size]);
+
+    uint8_t ID = 0;
+    file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +ID << endl;
+    file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +(serial_size&0xFF) << endl;
+    file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +(serial_size>>8&0xFF) << endl;
+    file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +(serial_size>>16&0xFF) << endl;
+    file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +(serial_size>>24&0xFF) << endl;
+    ser::OStream stream(buffer.get(), serial_size);
+    ser::serialize(stream, {{name}});
+    {{/first}}
+    {{/messages}}
+    for(int i=0; i<serial_size; i++){
+        file_stimulus_input << std::uppercase << setfill('0') << setw(2) << hex << +(buffer[i]) << endl;
+    }
+
+    file_stimulus_input.close();
+
+  return 0;
+}

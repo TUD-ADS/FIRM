@@ -1,0 +1,12 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#axis}}
+{{name}}_tready_out <= '0';
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{>msg_to_AXIS_tready}}
+{{/multi}}
+{{/fields}}
+{{/message}}

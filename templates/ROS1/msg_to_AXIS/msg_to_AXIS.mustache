@@ -1,0 +1,91 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use ieee.std_logic_unsigned.all;
+use IEEE.numeric_std.all;
+use work.functions.all;
+
+entity {{#IP}}{{name}}{{/IP}} is
+    generic (
+        BITS    : integer := {{#msg}}{{BITS}}{{/msg}};
+        IPID    : natural := {{#IP}}{{ID}}{{/IP}}
+    );
+    Port (
+        clk                         : in std_logic;
+        rst                         : in std_logic;
+        -- AXIS Master
+        m_axis_tvalid               : out std_logic;
+        m_axis_tdata                : out std_logic_vector (BITS-1 downto 0);
+        m_axis_tlast                : out std_logic;
+        m_axis_tready               : in std_logic;
+
+        -- ROS message definition
+        {{>msg_to_AXIS_Entity}}
+
+        fpgaros_valid_in : in std_logic
+        );
+end {{#IP}}{{name}}{{/IP}};
+
+architecture Behavioral of {{#IP}}{{name}}{{/IP}} is
+
+    signal s_counter : std_logic_vector(31 downto 0) := (others=>'0');
+    {{>SignalCounters}}
+    signal s_counter_total : std_logic_vector(31 downto 0) := (others=>'0');    -- This counter is used to generate m_axis_tlast
+
+    signal delay : std_logic_vector(1 downto 0);    -- This signal is to detect the rising edge of valid
+    signal valid_risingEdge : std_logic := '0';
+    signal count_EN : std_logic := '0';
+
+begin
+
+    process(clk)
+    begin
+        if(rising_edge(clk)) then
+            -- Rising edge detector of valid
+            delay(0) <= delay(1);
+            delay(1) <= fpgaros_valid_in;
+
+            -- Logic to allow counting
+            if(valid_risingEdge='1') then
+                count_EN <= '1';
+            end if;
+
+            -- Multiplexing logic
+            --if(fpgaros_valid_in='1') then
+            if(count_EN='1' and m_axis_tready='1') then
+                if(s_counter=0) then
+                    m_axis_tdata <= std_logic_vector(to_unsigned(IPID, 8));
+                    s_counter <= s_counter + '1';
+                    m_axis_tvalid <= '1';   -- Find if this can be done somewhere else.
+                    s_counter_total <= (others=>'0');
+                    {{>msg_to_AXIS_submsg_valid_init}}
+                end if;
+                {{>msg_to_AXIS_Process}}
+                if(s_counter_total=(total_length_in+4)-1) then
+                    m_axis_tlast <= '1';
+                    s_counter <= (others=>'0');
+                    {{>ResetCounters}}
+                    s_counter_total <= (others=>'0');
+                    count_EN <= '0';
+                end if;
+            else
+                m_axis_tdata <= (others=>'0');
+                m_axis_tvalid <= '0';
+                m_axis_tlast <= '0';
+                {{>msg_to_AXIS_tready}}
+            end if;
+        end if;
+    end process;
+
+    valid_risingEdge <= (not delay(0)) and delay(1);    -- valid's rising edge
+
+end Behavioral;

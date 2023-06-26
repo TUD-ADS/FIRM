@@ -1,0 +1,15 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#datatype}}
+signal s_{{name}}_latch : {{type}} := (others=>(others=>'0'));
+{{/datatype}}
+{{#axis}}
+signal s_{{name}}_length_latch : t_uint32 := (others=>(others=>'0'));
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{>AXIS_to_msg_SignalsFields}}
+{{/multi}}
+{{/fields}}
+{{/message}}

@@ -1,0 +1,191 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <unistd.h>
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+using namespace std;
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/serialization.hpp"
+{{#messages}}
+#include "{{include}}.hpp"
+{{/messages}}
+
+#define MIN_v_arr 2
+#define MAX_v_arr 5
+
+// ROS Built-in types (http://wiki.ros.org/msg):
+uint8_t create_bool(){return (rand()%(0xFF));}
+uint8_t create_uint8(){return (rand()%(0xFF));}
+uint8_t create_int8(){return (rand()%(0xFF));}
+uint16_t create_uint16(){return (rand()%(0xFFFF));}
+uint16_t create_int16(){return (rand()%(0xFFFF));}
+uint32_t create_uint32(){return (rand()%(0xFFFFFFFF));}
+uint32_t create_int32(){return (rand()%(0xFFFFFFFF));}
+uint64_t create_uint64(){return (rand()%(0xFFFFFFFFFFFFFFFF));}
+uint64_t create_int64(){return (rand()%(0xFFFFFFFFFFFFFFFF));}
+float create_float32(){return (static_cast <float> (rand()) / static_cast <float> (RAND_MAX));}
+double create_float64(){return (static_cast <double> (rand()) / static_cast <double> (RAND_MAX));}
+// Random number between X and Y
+size_t field_range(uint32_t bound){
+    uint32_t rand_min;
+    if(bound<=MIN_v_arr)
+        rand_min=bound;
+    else
+        rand_min=MIN_v_arr;
+    uint32_t rand_max;
+    if(bound<=MAX_v_arr)
+        rand_max=bound;
+    else
+        rand_max=MAX_v_arr;
+    return(rand()%(rand_max - rand_min + 1) + rand_min);
+}
+string create_string() {
+    size_t len = field_range(MAX_v_arr);
+    string tmp_s;
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    srand( (unsigned) time(NULL) * getpid());
+    tmp_s.reserve(len);
+    for (size_t i = 0; i < len; ++i)
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    return tmp_s;
+}
+string create_string(uint32_t max) {
+    size_t len = field_range(max);
+    string tmp_s;
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    srand( (unsigned) time(NULL) * getpid());
+    tmp_s.reserve(len);
+    for (size_t i = 0; i < len; ++i)
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    return tmp_s;
+}
+std::u16string create_wstring() {
+    size_t len = field_range(MAX_v_arr);
+    std::u16string tmp_s;
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    srand( (unsigned) time(NULL) * getpid());
+    tmp_s.reserve(len);
+    for (size_t i = 0; i < len; ++i)
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    return tmp_s;
+}
+std::u16string create_wstring(uint32_t max) {
+    size_t len = field_range(max);
+    std::u16string tmp_s;
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+    srand( (unsigned) time(NULL) * getpid());
+    tmp_s.reserve(len);
+    for (size_t i = 0; i < len; ++i)
+        tmp_s += alphanum[rand() % (sizeof(alphanum) - 1)];
+    return tmp_s;
+}
+//ros::Time create_time(){ros::Time time;time.sec = create_uint32();time.nsec = create_uint32();return time;}
+//ros::Duration create_duration(){ros::Duration duration;duration.sec = create_uint32();duration.nsec = create_uint32();return duration;}
+
+// Deprecated
+#define create_byte() create_int8()
+#define create_char() create_uint8()
+
+{{#messages}}
+{{package}}::msg::{{name}} create_{{package}}_{{name}}();
+{{/messages}}
+
+{{#messages}}
+{{package}}::msg::{{name}} create_{{package}}_{{name}}() {
+    {{package}}::msg::{{name}} result;
+
+    {{#structure}}
+    {{^v_arr}}
+    {{^c_arr}}
+    result.{{name}} = create_{{type}}({{#bound}}{{bound}}{{/bound}});
+    {{/c_arr}}
+    {{/v_arr}}
+    {{#v_arr}}
+    for(size_t i=0; i<field_range({{#bound}}{{bound}}{{/bound}}{{^bound}}MAX_v_arr{{/bound}}); i++){
+        result.{{name}}.push_back(create_{{type}}());
+    }
+    {{/v_arr}}
+    {{#c_arr}}
+    {{^msg}}
+    for(size_t i=0; i<result.{{name}}.size(); i++){
+        result.{{name}}.at(i) = create_{{type}}();
+    }
+    {{/msg}}
+    {{#msg}}
+    for(size_t i=0; i<{{c_arr_size}}; i++){
+        result.{{name}}[i] = create_{{type}}();
+    }
+    {{/msg}}
+    {{/c_arr}}
+    {{/structure}}
+    return result;
+}
+{{/messages}}
+
+int main(int argc, char * argv[]){
+    rclcpp::init(argc, argv);
+
+    ofstream myfile;
+    myfile.open("stimulus_input.txt");
+
+    srand(time(NULL));
+
+    rclcpp::SerializedMessage serialized_msg;
+
+    {{#messages}}
+    {{#first}}
+    auto message = {{package}}::msg::{{name}}();
+    message = create_{{package}}_{{name}}();
+
+    auto message_header_length = 8u;
+    auto message_payload_length = static_cast<size_t>(sizeof(message));
+    serialized_msg.reserve(message_header_length + message_payload_length);
+
+    static rclcpp::Serialization<{{package}}::msg::{{name}}> serializer;
+    serializer.serialize_message(&message, &serialized_msg);
+
+    uint8_t ID = 0;
+    myfile << uppercase << setfill('0') << setw(2) << hex << +ID << endl;
+    myfile << uppercase << setfill('0') << setw(2) << hex << +(serialized_msg.size()&0xFF) << endl;
+    myfile << uppercase << setfill('0') << setw(2) << hex << +(serialized_msg.size()>>8&0xFF) << endl;
+    myfile << uppercase << setfill('0') << setw(2) << hex << +(serialized_msg.size()>>16&0xFF) << endl;
+    myfile << uppercase << setfill('0') << setw(2) << hex << +(serialized_msg.size()>>24&0xFF) << endl;
+    {{/first}}
+    {{/messages}}
+    for(size_t i=0; i<serialized_msg.size(); i++){
+        myfile << uppercase << setfill('0') << setw(2) << hex << +(serialized_msg.get_rcl_serialized_message().buffer[i]) << endl;
+    }
+
+    myfile.close();
+
+    rclcpp::shutdown();
+    return 0;
+}

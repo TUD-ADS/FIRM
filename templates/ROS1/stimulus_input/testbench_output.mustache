@@ -1,0 +1,82 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+#include "ros/ros.h"
+
+{{#messages}}
+#include "{{package}}/{{name}}.h"
+{{/messages}}
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <memory>
+#include <boost/format.hpp>
+
+namespace ser = ros::serialization;
+using namespace std;
+
+int main(int argc, char **argv)
+{
+    ros::init(argc, argv, "node_publisher");
+    ros::NodeHandle n;
+
+    {{#messages}}
+    {{#first}}
+    {{package}}::{{name}} message;
+    {{/first}}
+    {{/messages}}
+
+    size_t message_size;
+    std::unique_ptr<uint8_t[]> message_buffer;
+    string line;
+    size_t lineNum=0;
+    ifstream file_testbench_output ("testbench_output.txt");
+    union size{
+        uint8_t size_arr[4];
+        uint32_t size;
+    } size;
+    if (file_testbench_output.is_open()){
+        while ( getline (file_testbench_output,line) ){
+            if(lineNum==1){
+                size.size_arr[0] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==2){
+                size.size_arr[1] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==3){
+                size.size_arr[2] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==4){
+                size.size_arr[3] = strtoul(line.c_str(), 0 , 16);
+                message_size = size.size;
+                message_buffer.reset(new uint8_t[message_size]);
+                size.size = size.size - 4;
+                for(size_t i=0; i<4; i++)
+                    message_buffer[i] = size.size_arr[i];
+            }
+            if(lineNum>=5){
+                message_buffer[lineNum-4-1] = strtoul(line.c_str(), 0 , 16);
+            }
+            lineNum++;
+        }
+        file_testbench_output.close();
+    }
+
+    ser::IStream message_stream(message_buffer.get(), message_size);
+    ser::deserialize(message_stream, message);
+
+    ofstream file_test_output;
+    file_test_output.open("test_output.txt");
+    file_test_output << message;
+    file_test_output.close();
+
+  return 0;
+}

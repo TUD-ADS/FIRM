@@ -1,0 +1,143 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%    This code was generated with FIRM under the GPLv3 license.       %
+%    Please see the accompanying LICENSE file for more information.   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Copyright (c) 2023
+% Ariel Podlubne
+% Johannes Mey
+% Rene Schöne
+
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <unistd.h>
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <iomanip>
+using namespace std;
+
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/serialization.hpp"
+{{#messages}}
+#include "{{include}}.hpp"
+{{/messages}}
+
+int main(int argc, char * argv[]){
+    rclcpp::init(argc, argv);
+
+    /***** Load stimulus_input.txt *****/
+    size_t message_size_stimulus_input;
+    std::unique_ptr<uint8_t[]> message_buffer_stimulus_input;
+    std::string line;
+    size_t lineNum=0;
+    std::ifstream file_stimulus_input ("stimulus_input.txt");
+    union size{
+        uint8_t size_arr[4];
+        uint32_t size;
+    } size_stimulus_input;
+    if (file_stimulus_input.is_open()){
+        while ( getline (file_stimulus_input,line) ){
+            if(lineNum==1){
+                size_stimulus_input.size_arr[0] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==2){
+                size_stimulus_input.size_arr[1] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==3){
+                size_stimulus_input.size_arr[2] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==4){
+                size_stimulus_input.size_arr[3] = strtoul(line.c_str(), 0 , 16);
+                message_size_stimulus_input = size_stimulus_input.size;
+                message_buffer_stimulus_input.reset(new uint8_t[message_size_stimulus_input]);
+                size_stimulus_input.size = size_stimulus_input.size - 4;
+                for(size_t i=0; i<4; i++)
+                    message_buffer_stimulus_input[i] = size_stimulus_input.size_arr[i];
+            }
+            if(lineNum>=5){
+                message_buffer_stimulus_input[lineNum-4-1] = strtoul(line.c_str(), 0 , 16);
+            }
+            lineNum++;
+        }
+        file_stimulus_input.close();
+    }
+
+    /***** Deserialize stimulus_input.txt into a ROS2 message *****/
+    {{#messages}}
+    {{#first}}
+    auto stimulus_input_msg = {{package}}::msg::{{name}}();
+    rclcpp::SerializedMessage stimulus_input_serialized(message_size_stimulus_input);
+    auto & rcl_handle_stimulus_input = stimulus_input_serialized.get_rcl_serialized_message();
+    rcl_handle_stimulus_input.buffer_length = message_size_stimulus_input;
+    memcpy(rcl_handle_stimulus_input.buffer, message_buffer_stimulus_input.get(), message_size_stimulus_input);
+    static rclcpp::Serialization<{{package}}::msg::{{name}}> stimulus_input;
+    stimulus_input.deserialize_message(&stimulus_input_serialized, &stimulus_input_msg);
+    {{/first}}
+    {{/messages}}
+
+    /***** Load testbench_output.txt *****/
+    size_t message_size_testbench_output;
+    std::unique_ptr<uint8_t[]> message_buffer_testbench_output;
+    lineNum=0;
+    std::ifstream file_testbench_output ("testbench_output.txt");
+    union size size_testbench_output;
+    if (file_testbench_output.is_open()){
+        while ( getline (file_testbench_output,line) ){
+            if(lineNum==1){
+                size_testbench_output.size_arr[0] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==2){
+                size_testbench_output.size_arr[1] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==3){
+                size_testbench_output.size_arr[2] = strtoul(line.c_str(), 0 , 16);
+            }
+            if(lineNum==4){
+                size_testbench_output.size_arr[3] = strtoul(line.c_str(), 0 , 16);
+                message_size_testbench_output = size_testbench_output.size;
+                message_buffer_testbench_output.reset(new uint8_t[message_size_testbench_output]);
+                size_testbench_output.size = size_testbench_output.size - 4;
+                for(size_t i=0; i<4; i++)
+                    message_buffer_testbench_output[i] = size_testbench_output.size_arr[i];
+            }
+            if(lineNum>=5){
+                message_buffer_testbench_output[lineNum-4-1] = strtoul(line.c_str(), 0 , 16);
+            }
+            lineNum++;
+        }
+        file_testbench_output.close();
+    }
+
+    /***** Deserialize testbench_output.txt into a ROS2 message *****/
+    {{#messages}}
+    {{#first}}
+    auto testbench_output_msg = {{package}}::msg::{{name}}();
+    rclcpp::SerializedMessage testbench_output_serialized(message_size_testbench_output);
+    auto & rcl_handle_testbench_output = testbench_output_serialized.get_rcl_serialized_message();
+    rcl_handle_testbench_output.buffer_length = message_size_testbench_output;
+    memcpy(rcl_handle_testbench_output.buffer, message_buffer_testbench_output.get(), message_size_testbench_output);
+    static rclcpp::Serialization<{{package}}::msg::{{name}}> testbench_output;
+    testbench_output.deserialize_message(&testbench_output_serialized, &testbench_output_msg);
+
+    rclcpp::shutdown();
+
+    printf("stimulus_input.txt and testbench_output.txt for {{package}}/{{name}} ");
+    if(stimulus_input_msg == testbench_output_msg){
+        printf("MATCH\n");
+        return 0;
+    }
+    else{
+        printf("DO NOT MATCH\n");
+        {{#msgPrintSupport}}
+        std::cout << "\nStimulus Input:\n" << {{package}}::msg::to_yaml(stimulus_input_msg);
+        std::cout << "\n\nSimulation Output:\n" << {{package}}::msg::to_yaml(testbench_output_msg);
+        {{/msgPrintSupport}}
+        return 1;
+    }
+    {{/first}}
+    {{/messages}}
+}

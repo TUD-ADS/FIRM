@@ -1,0 +1,178 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}) then
+    {{^computeModulo}}
+    s_counter <= s_counter + '1';
+    {{#lastByteAXIS}}
+    if(((to_integer(unsigned(s_inputs+1)) mod {{size}}) = 0)) then
+        s_padding_{{name}} <= '1';
+    end if;
+    {{/lastByteAXIS}}
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod {{#axis}}4{{/axis}}{{^axis}}{{size}}{{/axis}}) = 0) then
+        s_counter <= s_counter + '1';
+    end if;
+    {{/computeModulo}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+{{^axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    {{^lastByte}}
+    {{^computeModulo}}
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod {{#axis}}4{{/axis}}{{^axis}}{{size}}{{/axis}}) = 0) then
+        s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    end if;
+    {{/computeModulo}}
+    {{/lastByte}}
+    {{#lastByte}}
+    {{^computeModulo}}
+    {{#resetElement}}
+    {{>AXIS_to_msg_Process_resetElement}}
+    {{/resetElement}}
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod {{#axis}}4{{/axis}}{{^axis}}{{size}}{{/axis}}) = 0) then
+        {{#resetElement}}
+        {{>AXIS_to_msg_Process_resetElement}}
+        {{/resetElement}}
+    end if;
+    {{/computeModulo}}
+    {{/lastByte}}
+end if;
+{{/axis}}
+{{#axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    {{^computeModulo}}
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    {{#lastByteAXIS}}
+    {{#lastByte}}
+    s_counter_{{name}} <= (others=>'0');
+    if(((to_integer(unsigned(s_inputs+1)) mod {{size}}) = 0)) then
+        s_padding_{{name}} <= '1';
+    end if;
+    {{/lastByte}}
+    {{/lastByteAXIS}}
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod 4) = 0) then
+        s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    end if;
+    {{/computeModulo}}
+end if;
+{{/axis}}
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/index}}
+{{#axis}}
+{{^isSubmessage}}
+if({{name}}_tready_in='1' and s_counter={{index_tdata}}) then
+    if({{size}}>4) then -- Padding to {{size}} bytes
+        if(((to_integer(unsigned(s_inputs+1)) mod {{size}}) = 0)) then
+            s_padding_{{name}} <= '1';
+        end if;
+        if(s_padding_{{name}}='1') then
+            if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+                s_counter_{{name}} <= s_counter_{{name}} + '1';
+            else
+                {{#resetElement}}
+                {{>AXIS_to_msg_Process_resetElement }}
+                {{/resetElement}}
+            end if;
+        end if;
+    elsif({{size}}<=4) then
+        if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+            s_counter_{{name}} <= s_counter_{{name}} + '1';
+        else
+            {{#resetElement}}
+            {{>AXIS_to_msg_Process_resetElement }}
+            {{/resetElement}}
+        end if;
+    end if;
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+if({{name}}_tready_in='1' and s_counter_{{currentMessage}}={{index_tdata}}) then
+    if({{size}}>4) then -- Padding to {{size}} bytes
+        if(((to_integer(unsigned(s_inputs+1)) mod {{size}}) = 0)) then
+            s_padding_{{name}} <= '1';
+        end if;
+        if(s_padding_{{name}}='1') then
+            if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+                s_counter_{{name}} <= s_counter_{{name}} + '1';
+            else
+                {{#resetElement}}
+                {{>AXIS_to_msg_Process_resetElement }}
+                {{/resetElement}}
+            end if;
+        end if;
+    elsif({{size}}<=4) then
+        if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+            s_counter_{{name}} <= s_counter_{{name}} + '1';
+        else
+            {{#resetElement}}
+            {{>AXIS_to_msg_Process_resetElement }}
+            {{/resetElement}}
+        end if;
+    end if;
+end if;
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}) then
+    {{^computeModulo}}
+    s_counter <= s_counter + '1';
+    {{#lastByte}}
+    s_counter_{{currentMessage}} <= (others=>'0');
+    s_counter_{{currentMessage}}_length <= (others=>'0');
+    {{/lastByte}}
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod 4) = 0) then
+        s_counter <= s_counter + '1';
+    end if;
+    {{/computeModulo}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{N}}) then
+    {{^computeModulo}}
+    s_counter_{{parentMessage}} <= s_counter_{{parentMessage}} + '1';
+    {{/computeModulo}}
+    {{#computeModulo}}
+    if((to_integer(unsigned(s_inputs)) mod 4) = 0) then
+        s_counter_{{parentMessage}} <= s_counter_{{parentMessage}} + '1';
+    end if;
+    {{/computeModulo}}
+    {{#lastByte}}
+    s_counter_{{currentMessage}} <= (others=>'0');
+    {{/lastByte}}
+end if;
+{{/isSubmessage}}
+{{/index}}
+{{^isSubmessage}}
+if(s_counter={{currentMessageByte}}) then
+    {{>AXIS_to_msg_Process}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{currentMessageByte}}) then
+    {{>AXIS_to_msg_Process}}
+end if;
+{{/isSubmessage}}
+{{/multi}}
+{{/fields}}
+{{/message}}

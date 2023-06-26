@@ -1,0 +1,96 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}) then
+    s_counter <= s_counter + '1';
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+{{^axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    {{^lastByte}}
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    {{/lastByte}}
+    {{#lastByte}}
+    {{#resetElement}}
+    {{>AXIS_to_msg_Process_resetElement}}
+    {{/resetElement}}
+    {{/lastByte}}
+end if;
+{{/axis}}
+{{#axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    {{#lastByteAXIS}}
+    {{#lastByte}}
+    s_counter_{{name}} <= (others=>'0');
+    {{/lastByte}}
+    {{/lastByteAXIS}}
+end if;
+{{/axis}}
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/index}}
+{{#axis}}
+{{^isSubmessage}}
+if({{name}}_tready_in='1' and s_counter={{index_tdata}}) then
+    if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+        s_counter_{{name}} <= s_counter_{{name}} + '1';
+    else
+        {{#resetElement}}
+        {{>AXIS_to_msg_Process_resetElement}}
+        {{/resetElement}}
+    end if;
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+if({{name}}_tready_in='1' and s_counter_{{currentMessage}}={{index_tdata}}) then
+    if(s_counter_{{name}}<((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+        s_counter_{{name}} <= s_counter_{{name}} + '1';
+    else
+        {{#resetElement}}
+        {{>AXIS_to_msg_Process_resetElement}}
+        {{/resetElement}}
+    end if;
+end if;
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}) then
+    s_counter <= s_counter + '1';
+    {{#lastByte}}
+    s_counter_{{currentMessage}} <= (others=>'0');
+    s_counter_{{currentMessage}}_length <= (others=>'0');
+    {{/lastByte}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{N}}) then
+    s_counter_{{parentMessage}} <= s_counter_{{parentMessage}} + '1';
+    {{#lastByte}}
+    s_counter_{{currentMessage}} <= (others=>'0');
+    {{/lastByte}}
+end if;
+{{/isSubmessage}}
+{{/index}}
+{{^isSubmessage}}
+if(s_counter={{currentMessageByte}}{{#multi}} and {{currentMessage}}_valid_in='1'{{/multi}}) then
+    {{>AXIS_to_msg_Process}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{currentMessageByte}}{{#multi}} and {{currentMessage}}_valid_in='1'{{/multi}}) then
+    {{>AXIS_to_msg_Process}}
+end if;
+{{/isSubmessage}}
+{{/multi}}
+{{/fields}}
+{{/message}}

@@ -1,0 +1,20 @@
+{{#lastElement}}
+{{#simple}}
+{{#counter}}
+s_counter_{{counter}} <= (others=>'0');
+s_counter_{{counter}}_length <= s_counter_{{counter}}_length + '1';
+{{/counter}}
+{{/simple}}
+{{#multi}}
+if(s_counter_{{counter}}_length=((s_{{counter}}_length_latch(0) & s_{{counter}}_length_latch(1) & s_{{counter}}_length_latch(2) & s_{{counter}}_length_latch(3)))-1) then
+    s_counter_{{counter}}_length <= (others=>'0');
+    {{>AXIS_to_msg_Process_lastElement_partial}}
+end if;
+{{/multi}}
+{{^multi}}
+if(s_counter_{{counter}}_length=((s_{{counter}}_length_latch(0) & s_{{counter}}_length_latch(1) & s_{{counter}}_length_latch(2) & s_{{counter}}_length_latch(3)))-1) then
+    s_counter_{{counter}}_length <= (others=>'0');
+    s_counter <= s_counter + '1';
+end if;
+{{/multi}}
+{{/lastElement}}

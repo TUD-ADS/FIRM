@@ -1,0 +1,19 @@
+{{#reset}}
+s_counter{{^main}}_{{counter}}{{/main}} <= (others=>'0');
+{{^string}}
+s_padding_{{name}} <= '0';
+{{/string}}
+{{/reset}}
+{{#increment}}
+s_counter{{^main}}_{{counter}}{{/main}} <= s_counter{{^main}}_{{counter}}{{/main}} + '1';
+{{/increment}}
+{{#resetElement}}
+{{#evaluate}}
+if(s_counter_{{evaluate}}=((s_{{evaluate}}_latch(0) & s_{{evaluate}}_latch(1) & s_{{evaluate}}_latch(2) & s_{{evaluate}}_latch(3)))-1) then
+    {{>AXIS_to_msg_Process_resetElement}}
+end if;
+{{/evaluate}}
+{{^evaluate}}
+{{>AXIS_to_msg_Process_resetElement}}
+{{/evaluate}}
+{{/resetElement}}

@@ -1,0 +1,14 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#axis}}
+signal s_counter_{{name}} : std_logic_vector(31 downto 0) := (others=>'0');
+{{/axis}}
+{{/simple}}
+{{#multi}}
+signal s_counter_{{currentMessage}} : std_logic_vector(31 downto 0) := (others=>'0');
+signal s_counter_{{currentMessage}}_length : std_logic_vector(31 downto 0) := (others=>'0');
+{{>SignalCounters}}
+{{/multi}}
+{{/fields}}
+{{/message}}

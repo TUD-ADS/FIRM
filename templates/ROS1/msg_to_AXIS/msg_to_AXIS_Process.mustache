@@ -1,0 +1,121 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}+1) then
+    m_axis_tdata <= {{name}}{{#axis}}_length{{/axis}}_in({{MSB}} downto {{LSB}});
+    s_counter <= s_counter + '1';
+    s_counter_total <= s_counter_total + '1';
+    {{#axis}}
+    {{#lastByteAXIS}}
+    {{name}}_tready_out <= '1';
+    s_counter_{{name}} <= (others=>'0');
+    {{/lastByteAXIS}}
+    {{/axis}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+{{^axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    m_axis_tdata <= {{name}}_in({{MSB}} downto {{LSB}});
+    {{^lastByte}}
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    {{/lastByte}}
+    {{#lastByte}}
+    {{#resetElement}}
+    {{>msg_to_AXIS_Process_resetElement}}
+    {{/resetElement}}
+    {{/lastByte}}
+    s_counter_total <= s_counter_total + '1';
+end if;
+{{/axis}}
+{{#axis}}
+if(s_counter_{{currentMessage}}={{N}}) then
+    m_axis_tdata <= {{name}}_length_in({{MSB}} downto {{LSB}});
+    s_counter_{{currentMessage}} <= s_counter_{{currentMessage}} + '1';
+    s_counter_total <= s_counter_total + '1';
+    {{#lastByteAXIS}}
+    {{name}}_tready_out <= '1';
+    s_counter_{{name}} <= (others=>'0');
+    {{/lastByteAXIS}}
+end if;
+{{/axis}}
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/index}}
+{{#axis}}
+{{^isSubmessage}}
+if({{name}}_tvalid_in='1' and s_counter={{index_tdata}}+1) then
+    m_axis_tdata <= {{name}}_tdata_in;
+    s_counter_total <= s_counter_total + '1';
+    if(s_counter_{{name}}<(({{name}}_length_in(3) & {{name}}_length_in(2) & {{name}}_length_in(1) & {{name}}_length_in(0))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+        s_counter_{{name}} <= s_counter_{{name}} + '1';
+        {{name}}_tready_out <= '1';
+    else
+        {{name}}_tready_out <= '0';
+        {{#resetElement}}
+        {{>AXIS_to_msg_Process_resetElement}}
+        {{/resetElement}}
+    end if;
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{^firstFieldInSubmessage}}
+if({{name}}_tvalid_in='1' and s_counter_{{currentMessage}}={{index_tdata}}) then
+    m_axis_tdata <= {{name}}_tdata_in;
+    s_counter_total <= s_counter_total + '1';
+    if(s_counter_{{name}}<(({{name}}_length_in(3) & {{name}}_length_in(2) & {{name}}_length_in(1) & {{name}}_length_in(0))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1) then
+        s_counter_{{name}} <= s_counter_{{name}} + '1';
+        {{name}}_tready_out <= '1';
+    else
+        {{name}}_tready_out <= '0';
+        {{#resetElement}}
+        {{>msg_to_AXIS_Process_resetElement}}
+        {{/resetElement}}
+    end if;
+end if;
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/axis}}
+{{/simple}}
+{{#multi}}
+{{#index}}
+{{^isSubmessage}}
+if(s_counter={{N}}+1) then
+    m_axis_tdata <= {{currentMessage}}_length_in({{MSB}} downto {{LSB}});
+    s_counter <= s_counter + '1';
+    s_counter_total <= s_counter_total + '1';
+    {{#lastN}}
+    s_counter_{{currentMessage}} <= (others=>'0');
+    s_counter_{{currentMessage}}_length <= (others=>'0');
+    {{currentMessage}}_valid_out <= '1';
+    {{/lastN}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{N}}) then
+    m_axis_tdata <= {{currentMessage}}_length_in({{MSB}} downto {{LSB}});
+    s_counter_{{parentMessage}} <= s_counter_{{parentMessage}} + '1';
+    s_counter_total <= s_counter_total + '1';
+    {{#lastN}}
+    s_counter_{{currentMessage}}_length <= (others=>'0');
+    {{currentMessage}}_valid_out <= '1';
+    {{/lastN}}
+end if;
+{{/isSubmessage}}
+{{/index}}
+{{^isSubmessage}}
+if(s_counter={{currentMessageByte}}+1) then
+    {{>msg_to_AXIS_Process}}
+end if;
+{{/isSubmessage}}
+{{#isSubmessage}}
+if(s_counter_{{parentMessage}}={{currentMessageByte}}) then
+    {{>msg_to_AXIS_Process}}
+end if;
+{{/isSubmessage}}
+{{/multi}}
+{{/fields}}
+{{/message}}

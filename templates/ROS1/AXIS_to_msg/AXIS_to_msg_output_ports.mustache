@@ -1,0 +1,41 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{^axis}}
+{{name}}_out <= {{#byte}}s_{{name}}_latch({{N}}){{^last}} & {{/last}}{{#last}};{{/last}}{{/byte}}
+{{/axis}}
+{{#axis}}
+{{name}}_length_out <= s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3);
+{{name}}_tvalid_out <= '1' when (s_counter{{#currentMessage}}_{{currentMessage}}{{/currentMessage}}={{index_tdata}} and s_axis_tvalid='1') else '0';
+{{name}}_tlast_out <= '1' when s_counter{{#currentMessage}}_{{currentMessage}}{{/currentMessage}}={{index_tdata}} and s_counter_{{name}}=((s_{{name}}_length_latch(0) & s_{{name}}_length_latch(1) & s_{{name}}_length_latch(2) & s_{{name}}_length_latch(3))*std_logic_vector(to_unsigned({{axisTypeBytes}},8)))-1 else '0';
+{{name}}_tdata_out <= s_axis_tdata when (s_counter{{#currentMessage}}_{{currentMessage}}{{/currentMessage}}={{index_tdata}} and s_axis_tvalid='1' and {{name}}_tready_in='1') else (others=>'0');
+{{/axis}}
+{{#byte}}
+{{^isSubmessage}}
+{{^axis}}
+s_{{name}}_latch({{N}}) <= s_axis_tdata when (s_counter={{msgPos}}) else s_{{name}}_latch({{N}});
+{{/axis}}
+{{#axis}}
+s_{{name}}_length_latch({{N}}) <= s_axis_tdata when (s_counter={{msgPos}}) else s_{{name}}_length_latch({{N}});
+{{/axis}}
+{{/isSubmessage}}
+{{#isSubmessage}}
+{{#firstFieldInSubmessage}}
+s_{{name}}_latch({{N}}) <= s_axis_tdata when (s_counter{{#parentMessage}}_{{parentMessage}}{{/parentMessage}}={{msgPos}}) else s_{{name}}_latch({{N}});
+{{/firstFieldInSubmessage}}
+{{^firstFieldInSubmessage}}
+{{^axis}}
+s_{{name}}_latch({{N}}) <= s_axis_tdata when (s_counter_{{currentMessage}}={{msgPos}}{{#firstFieldNotLength}} and s_counter{{#parentMessage}}_{{parentMessage}}{{/parentMessage}}={{currentMessageByte}}{{/firstFieldNotLength}}) else s_{{name}}_latch({{N}});
+{{/axis}}
+{{#axis}}
+s_{{name}}_length_latch({{N}}) <= s_axis_tdata when (s_counter_{{currentMessage}}={{msgPos}}) else s_{{name}}_length_latch({{N}});
+{{/axis}}
+{{/firstFieldInSubmessage}}
+{{/isSubmessage}}
+{{/byte}}
+{{/simple}}
+{{#multi}}
+{{>AXIS_to_msg_output_ports}}
+{{/multi}}
+{{/fields}}
+{{/message}}

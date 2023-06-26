@@ -1,0 +1,11 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+signal s_padding_{{name}} : std_logic := '0';
+{{/simple}}
+{{#multi}}
+signal s_padding_{{currentMessage}} : std_logic_vector(31 downto 0) := (others=>'0');
+{{>AXIS_to_msg_Padding}}
+{{/multi}}
+{{/fields}}
+{{/message}}

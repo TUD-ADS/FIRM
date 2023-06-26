@@ -1,0 +1,14 @@
+{{#message}}
+{{#fields}}
+{{#simple}}
+{{#axis}}
+s_counter_{{name}} <= (others=>'0');
+{{/axis}}
+{{/simple}}
+{{#multi}}
+s_counter_{{currentMessage}} <= (others=>'0');
+s_counter_{{currentMessage}}_length <= (others=>'0');
+{{>ResetCounters}}
+{{/multi}}
+{{/fields}}
+{{/message}}
